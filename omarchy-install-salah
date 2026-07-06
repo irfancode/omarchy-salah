@@ -1,0 +1,55 @@
+#!/bin/bash
+
+# omarchy:summary=Install the Salah/Hijri prayer times widget for Waybar
+
+SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+echo "Installing Salah prayer times widget..."
+
+# Detect if running from installed omarchy or from git repo
+if [[ -f $SELF_DIR/share/salah.py ]]; then
+  SRC=$SELF_DIR/share
+elif [[ -f ~/.local/share/omarchy/config/salah/salah.py ]]; then
+  SRC=~/.local/share/omarchy/config/salah
+else
+  echo "Cannot find source files. Run from the omarchy-salah repo directory."
+  exit 1
+fi
+
+# Copy scripts to waybar config dir
+mkdir -p ~/.config/waybar
+cp "$SRC/salah.py" ~/.config/waybar/salah.py
+cp "$SRC/salah-status.sh" ~/.config/waybar/salah-status.sh
+chmod +x ~/.config/waybar/salah.py ~/.config/waybar/salah-status.sh
+
+echo "✓ Scripts installed to ~/.config/waybar/"
+
+# Check if waybar config already has custom/salah
+if grep -q 'custom/salah' ~/.config/waybar/config.jsonc 2>/dev/null; then
+  echo "✓ Waybar already configured for salah"
+else
+  echo ""
+  echo "Add this to your ~/.config/waybar/config.jsonc:"
+  echo ""
+  echo '  1) Add "custom/salah" to your modules-center or modules-right array'
+  echo ""
+  echo '  2) Add this module definition:'
+  echo '    "custom/salah": {'
+  echo '      "exec": "$HOME/.config/waybar/salah.py",'
+  echo '      "return-type": "json",'
+  echo '      "interval": 30,'
+  echo '      "tooltip": true,'
+  echo '      "on-click": "notify-send -u low \"$(~/.config/waybar/salah-status.sh)\""'
+  echo '    },'
+  echo ""
+fi
+
+# Restart waybar
+if command -v omarchy &>/dev/null; then
+  echo "Restarting Waybar..."
+  omarchy restart waybar
+fi
+
+echo ""
+echo "Done! Look for the 🕌 icon in your Waybar."
+echo "Hover for prayer times, click for full notification."
